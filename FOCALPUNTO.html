@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focal CRM - Consultoría, Precios & Producción Audiovisual</title>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #141b34;          /* Azul Oscuro */
+            --bg-sidebar: #141b34;       /* Azul Oscuro */
+            --bg-card: #ffffff;
+            --bg-main: #f9f8f6;          /* Blanco Cálido */
+            --primary: #141b34;         /* Azul Primario */
+            --accent: #f7941d;          /* Dorado */
+            --accent-hover: #d87d12;
+            --text-dark: #141b34;
+            --text-light: #f9f8f6;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --radius: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+
+        body {
+            display: flex; height: 100vh; background-color: var(--bg-main); color: var(--text-dark); overflow: hidden;
+        }
+
+        /* Sidebar */
+        aside {
+            width: 260px; background-color: var(--bg-sidebar); color: #fff; display: flex; flex-direction: column; padding: 1.5rem 1rem; border-right: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .brand {
+            display: flex; align-items: center; gap: 0.75rem; font-size: 1.4rem; font-weight: 800; margin-bottom: 2.5rem; color: var(--accent); padding-left: 0.5rem;
+        }
+
+        .brand span.sub { color: var(--text-light); font-weight: 400; font-size: 0.85rem; display: block; }
+
+        .nav-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 8px; color: #94a3b8; cursor: pointer; transition: all 0.2s ease; font-size: 0.95rem;
+        }
+
+        .nav-item:hover, .nav-item.active { background-color: rgba(247, 148, 29, 0.15); color: var(--accent); }
+        .nav-item.active { background-color: var(--accent); color: var(--bg-dark); font-weight: 600; }
+
+        /* Main Layout */
+        main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+
+        header {
+            background-color: #fff; padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .live-status {
+            display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; background: rgba(20, 27, 52, 0.05); padding: 0.3rem 0.8rem; border-radius: 20px; border: 1px solid var(--border); color: var(--bg-dark); font-weight: 600;
+        }
+
+        .pulse-dot {
+            width: 8px; height: 8px; background-color: var(--accent); border-radius: 50%; box-shadow: 0 0 0 0 rgba(247, 148, 29, 0.7); animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(247, 148, 29, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(247, 148, 29, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(247, 148, 29, 0); }
+        }
+
+        .user-profile { display: flex; align-items: center; gap: 0.75rem; }
+        .avatar {
+            width: 38px; height: 38px; border-radius: 50%; background-color: var(--accent); color: var(--bg-dark); display: flex; align-items: center; justify-content: center; font-weight: bold;
+        }
+
+        .content { padding: 2rem; flex: 1; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Common Elements */
+        .btn {
+            background-color: var(--primary); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; transition: background 0.2s;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn-accent { background-color: var(--accent); color: var(--bg-dark); }
+        .btn-accent:hover { background-color: var(--accent-hover); }
+        .btn-outline { background-color: transparent; border: 1px solid var(--border); color: var(--bg-dark); }
+        .btn-outline:hover { background-color: var(--bg-main); }
+
+        .card {
+            background: var(--bg-card); border-radius: var(--radius); padding: 1.5rem; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(20, 27, 52, 0.05); margin-bottom: 1.5rem;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;
+        }
+
+        .kpi-card {
+            background: white; padding: 1rem 1.25rem; border-radius: var(--radius); border: 1px solid var(--border); border-left: 4px solid var(--accent); display: flex; align-items: center; gap: 1rem;
+        }
+
+        .kpi-icon {
+            width: 40px; height: 40px; border-radius: 10px; background: rgba(247, 148, 29, 0.1); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+        }
+
+        .kpi-val { font-size: 1.3rem; font-weight: bold; color: var(--bg-dark); }
+        .kpi-label { color: var(--text-muted); font-size: 0.75rem; }
+
+        /* Badges */
+        .badge { padding: 0.25rem 0.6rem; border-radius: 50px; font-size: 0.75rem; font-weight: 600; }
+        .badge-ejecutada { background: #dcfce7; color: #166534; }
+        .badge-enejecucion { background: #fef9c3; color: #854d0e; }
+        .badge-reunion { background: #e0f2fe; color: #0369a1; }
+        .badge-enviada { background: #f1f5f9; color: #475569; }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        th { background-color: var(--bg-main); color: var(--bg-dark); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; }
+
+        /* Kanban Board */
+        .kanban-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; align-items: start; }
+        .kanban-col { background: #fff; border-radius: var(--radius); padding: 1rem; border: 1px solid var(--border); }
+        .kanban-header { font-weight: 700; font-size: 0.9rem; margin-bottom: 1rem; display: flex; justify-content: space-between; color: var(--bg-dark); border-bottom: 2px solid var(--accent); padding-bottom: 0.4rem; }
+        .kanban-card { background: var(--bg-main); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; border: 1px solid var(--border); position: relative; }
+        .kanban-title { font-weight: 600; margin-bottom: 0.4rem; color: var(--bg-dark); }
+        .kanban-price { font-size: 0.85rem; font-weight: bold; color: var(--accent-hover); margin-bottom: 0.4rem; }
+        .kanban-tag { font-size: 0.7rem; background: rgba(20, 27, 52, 0.1); color: var(--bg-dark); padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; }
+
+        /* Calendario Styles */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; margin-top: 1rem; }
+        .calendar-day-head { text-align: center; font-weight: 700; font-size: 0.8rem; color: var(--bg-dark); padding: 0.5rem; background: var(--bg-main); border-radius: 6px; }
+        .calendar-day { min-height: 90px; background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem; font-size: 0.8rem; display: flex; flex-direction: column; gap: 0.3rem; }
+        .calendar-event { background: var(--accent); color: var(--bg-dark); padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Tariff Grid */
+        .tariff-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; }
+        .tariff-card { background: #fff; border-radius: var(--radius); padding: 1.25rem; border: 1px solid var(--border); border-top: 4px solid var(--accent); text-align: center; }
+        .tariff-price { font-size: 1.6rem; font-weight: 800; color: var(--bg-dark); margin: 0.5rem 0; }
+
+        /* Modal & Forms */
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.4rem; font-size: 0.85rem; font-weight: 600; color: var(--bg-dark); }
+        .form-group input, .form-group select { width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 6px; outline: none; background: #fff; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(247, 148, 29, 0.2); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(20, 27, 52, 0.6); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal-card { background: white; width: 100%; max-width: 520px; border-radius: var(--radius); padding: 2rem; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-close { position: absolute; top: 1rem; right: 1.5rem; font-size: 1.25rem; cursor: pointer; color: var(--text-muted); }
+
+        .action-btn-sm { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 0.2rem 0.4rem; font-size: 0.85rem; }
+        .action-btn-sm:hover { color: var(--accent); }
+
+        /* Notification Toast */
+        .toast {
+            position: fixed; bottom: 20px; right: 20px; background: var(--bg-dark); color: #fff; padding: 0.8rem 1.2rem; border-radius: 8px; border-left: 4px solid var(--accent); font-size: 0.85rem; opacity: 0; transition: opacity 0.3s ease; z-index: 2000; pointer-events: none;
+        }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside>
+        <div class="brand">
+            <i class="fa-solid fa-camera-retro"></i>
+            <div>
+                <span>Focal</span>
+                <span class="sub">Consultoría & Media</span>
+            </div>
+        </div>
+        <ul class="nav-list">
+            <li class="nav-item active" onclick="switchTab(event, 'dashboard')">
+                <i class="fa-solid fa-chart-bar"></i>
+                <span>Dashboard de Barras</span>
+            </li>
+            <li class="nav-item" onclick="switchTab(event, 'pricing')">
+                <i class="fa-solid fa-tags"></i>
+                <span>Precios por Propuestas</span>
+            </li>
+            <li class="nav-item" onclick="switchTab(event, 'calendar-tab')">
+                <i class="fa-solid fa-calendar-days"></i>
+                <span>Calendario de Citas</span>
+            </li>
+            <li class="nav-item" onclick="switchTab(event, 'leads')">
+                <i class="fa-solid fa-users"></i>
+                <span>Gestión de Propuestas</span>
+            </li>
+            <li class="nav-item" onclick="switchTab(event, 'production')">
+                <i class="fa-solid fa-video"></i>
+                <span>Producción Audiovisual</span>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main>
+        <header>
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+                <h2 id="page-title" style="color: var(--bg-dark);">Dashboard de Barras Interactivo</h2>
+                <div class="live-status">
+                    <div class="pulse-dot"></div>
+                    <span>Guardado Local Activo</span>
+                    <span id="live-clock" style="margin-left:0.3rem; font-weight:normal; color:var(--text-muted);">00:00:00</span>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <button class="btn btn-outline" onclick="saveToLocalStorage(true)"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
+                <button class="btn btn-outline" style="color: #b91c1c;" onclick="resetToDefaultData()"><i class="fa-solid fa-rotate-left"></i> Restablecer</button>
+                <button class="btn btn-accent" onclick="openModal('lead')"><i class="fa-solid fa-plus"></i> + Nueva Propuesta</button>
+            </div>
+        </header>
+
+        <div class="content">
+
+            <!-- TAB 1: DASHBOARD DE BARRAS Y METRICAS -->
+            <section id="dashboard" class="tab-content active">
+                
+                <!-- KPIs Dinámicos -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon"><i class="fa-solid fa-check-double"></i></div>
+                        <div>
+                            <div class="kpi-label">Ejecutadas</div>
+                            <div class="kpi-val" id="kpi-ejecutadas">0</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon"><i class="fa-solid fa-spinner"></i></div>
+                        <div>
+                            <div class="kpi-label">En Ejecución</div>
+                            <div class="kpi-val" id="kpi-enejecucion">0</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon"><i class="fa-solid fa-comments"></i></div>
+                        <div>
+                            <div class="kpi-label">En Reunión</div>
+                            <div class="kpi-val" id="kpi-reunion">0</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon"><i class="fa-solid fa-paper-plane"></i></div>
+                        <div>
+                            <div class="kpi-label">Enviadas</div>
+                            <div class="kpi-val" id="kpi-enviadas">0</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="border-left-color: #166534;">
+                        <div class="kpi-icon" style="color: #166534; background: rgba(22, 101, 52, 0.1);"><i class="fa-solid fa-sack-dollar"></i></div>
+                        <div>
+                            <div class="kpi-label">Monto Ejecutado</div>
+                            <div class="kpi-val" id="kpi-total-ganado">$0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráfico de Barras -->
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <div>
+                            <h3 style="color:var(--bg-dark);">Estado Interactivo de Propuestas</h3>
+                            <p style="font-size:0.8rem; color:var(--text-muted);">Actualización automática en vivo al modificar o agregar datos.</p>
+                        </div>
+                    </div>
+                    <div style="height: 300px;">
+                        <canvas id="proposalsBarChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tabla Resumen -->
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <h3 style="color:var(--bg-dark);">Listado General de Propuestas, Servicios y Montos</h3>
+                        <button class="btn btn-accent" onclick="openModal('lead')"><i class="fa-solid fa-pen"></i> Agregar / Modificar</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Cliente / Empresa</th>
+                                <th>Servicio</th>
+                                <th>Monto</th>
+                                <th>Fecha Programada</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboard-proposals-table"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB 2: MODULO DE PRECIOS POR PROPUESTAS -->
+            <section id="pricing" class="tab-content">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+                    <div>
+                        <h3 style="color:var(--bg-dark);">Tarifario de Servicios Audiovisuales</h3>
+                        <p style="color:var(--text-muted); font-size:0.85rem;">Puedes actualizar los precios sugeridos por cada tipo de servicio.</p>
+                    </div>
+                    <button class="btn btn-accent" onclick="openModal('pricingModal')"><i class="fa-solid fa-gear"></i> Editar Precios Base</button>
+                </div>
+
+                <div class="tariff-grid" style="margin-bottom: 2rem;">
+                    <div class="tariff-card">
+                        <i class="fa-solid fa-camera fa-2x" style="color:var(--accent);"></i>
+                        <h4 style="margin-top:0.5rem; color:var(--bg-dark);">Cobertura de Evento</h4>
+                        <div class="tariff-price" id="tariff-cobertura">$350</div>
+                        <p style="font-size:0.8rem; color:var(--text-muted);">Sociales, 15 años, bodas, graduaciones.</p>
+                    </div>
+                    <div class="tariff-card">
+                        <i class="fa-solid fa-mobile-screen-button fa-2x" style="color:var(--accent);"></i>
+                        <h4 style="margin-top:0.5rem; color:var(--bg-dark);">Campañas Reel 4K</h4>
+                        <div class="tariff-price" id="tariff-reels">$450</div>
+                        <p style="font-size:0.8rem; color:var(--text-muted);">Pack de contenido dinámico para redes.</p>
+                    </div>
+                    <div class="tariff-card">
+                        <i class="fa-solid fa-building fa-2x" style="color:var(--accent);"></i>
+                        <h4 style="margin-top:0.5rem; color:var(--bg-dark);">Video Corporativo</h4>
+                        <div class="tariff-price" id="tariff-corporativo">$800</div>
+                        <p style="font-size:0.8rem; color:var(--text-muted);">Presentación institucional y entrevistas.</p>
+                    </div>
+                    <div class="tariff-card">
+                        <i class="fa-solid fa-bullhorn fa-2x" style="color:var(--accent);"></i>
+                        <h4 style="margin-top:0.5rem; color:var(--bg-dark);">Spot de Marca</h4>
+                        <div class="tariff-price" id="tariff-spot">$600</div>
+                        <p style="font-size:0.8rem; color:var(--text-muted);">Anuncios publicitarios en alta calidad.</p>
+                    </div>
+                </div>
+
+                <!-- Detalle de Cotizaciones por Propuesta -->
+                <div class="card">
+                    <h3 style="color:var(--bg-dark); margin-bottom: 1rem;">Desglose Monetario por Cliente</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Servicio Asignado</th>
+                                <th>Precio Sugerido</th>
+                                <th>Monto Personalizado</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pricing-breakdown-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB 3: CALENDARIO DE PROGRAMACIÓN -->
+            <section id="calendar-tab" class="tab-content">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <h3 style="color:var(--bg-dark);"><i class="fa-solid fa-calendar-days" style="color:var(--accent);"></i> Calendario de Reuniones y Entregas</h3>
+                            <p style="font-size:0.8rem; color:var(--text-muted);">Sincronizado con las fechas de las propuestas registradas.</p>
+                        </div>
+                        <span style="font-weight:bold; color:var(--bg-dark);">Julio 2026</span>
+                    </div>
+
+                    <div class="calendar-grid">
+                        <div class="calendar-day-head">Lun</div>
+                        <div class="calendar-day-head">Mar</div>
+                        <div class="calendar-day-head">Mié</div>
+                        <div class="calendar-day-head">Jue</div>
+                        <div class="calendar-day-head">Vie</div>
+                        <div class="calendar-day-head">Sáb</div>
+                        <div class="calendar-day-head">Dom</div>
+                    </div>
+                    <div class="calendar-grid" id="calendar-body"></div>
+                </div>
+            </section>
+
+            <!-- TAB 4: GESTIÓN DE PROPUESTAS -->
+            <section id="leads" class="tab-content">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+                    <div>
+                        <h3 style="color:var(--bg-dark);">Gestión de Propuestas y Clientes</h3>
+                        <p style="color:var(--text-muted); font-size:0.85rem;">Edita los montos y estados en tiempo real.</p>
+                    </div>
+                    <button class="btn btn-accent" onclick="openModal('lead')"><i class="fa-solid fa-plus"></i> + Nueva Propuesta</button>
+                </div>
+
+                <div class="card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Empresa</th>
+                                <th>Contacto</th>
+                                <th>Servicio</th>
+                                <th>Monto ($)</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="proposals-master-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB 5: PRODUCCIÓN AUDIOVISUAL -->
+            <section id="production" class="tab-content">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem;">
+                    <div>
+                        <h3 style="color:var(--bg-dark);">Módulo Editable de Producción Audiovisual</h3>
+                        <p style="color:var(--text-muted); font-size:0.85rem;">Proyectos sincronizados con las propuestas y montos de clientes.</p>
+                    </div>
+                    <button class="btn btn-accent" onclick="openModal('prod')"><i class="fa-solid fa-film"></i> + Nuevo Proyecto de Producción</button>
+                </div>
+
+                <div class="kanban-board">
+                    <div class="kanban-col">
+                        <div class="kanban-header">
+                            <span>PROPUESTAS EN REUNIÓN</span>
+                            <span id="count-reunion">0</span>
+                        </div>
+                        <div id="kanban-reunion"></div>
+                    </div>
+
+                    <div class="kanban-col">
+                        <div class="kanban-header">
+                            <span>EN EJECUCIÓN (PRODUCCIÓN)</span>
+                            <span id="count-enejecucion">0</span>
+                        </div>
+                        <div id="kanban-enejecucion"></div>
+                    </div>
+
+                    <div class="kanban-col">
+                        <div class="kanban-header">
+                            <span>PROPUESTAS EJECUTADAS</span>
+                            <span id="count-ejecutadas">0</span>
+                        </div>
+                        <div id="kanban-ejecutadas"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="toast">Información guardada con éxito en el navegador.</div>
+
+    <!-- MODAL EDITAR / AGREGAR PROPUESTA Y PRECIO -->
+    <div class="modal-overlay" id="leadModal">
+        <div class="modal-card">
+            <span class="modal-close" onclick="closeModal('leadModal')">&times;</span>
+            <h3 style="margin-bottom: 1.2rem; color: var(--bg-dark);" id="modal-lead-title"><i class="fa-solid fa-pen-to-square"></i> Gestionar Propuesta</h3>
+            <form id="proposalForm" onsubmit="handleProposalSubmit(event)">
+                <input type="hidden" id="proposalId">
+                <div class="form-group">
+                    <label>Nombre de la Empresa / Cliente</label>
+                    <input type="text" id="companyName" required placeholder="Ej. Innovatech">
+                </div>
+                <div class="form-group">
+                    <label>Contacto</label>
+                    <input type="text" id="contactName" required placeholder="Ej. Carlos Ramos">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Servicio Audiovisual</label>
+                        <select id="serviceSelect" onchange="autoFillPrice()">
+                            <option value="Cobertura de Evento">Cobertura de Evento</option>
+                            <option value="Campañas Reel 4K">Campañas Reel 4K</option>
+                            <option value="Video Corporativo">Video Corporativo</option>
+                            <option value="Spot de Marca">Spot de Marca</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Monto de la Propuesta ($)</label>
+                        <input type="number" id="proposalPrice" required step="10">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Fecha Programada</label>
+                        <input type="date" id="eventDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Estado de la Propuesta</label>
+                        <select id="proposalStage">
+                            <option value="Propuesta enviada">Propuesta enviada</option>
+                            <option value="Propuestas en reunión">Propuestas en reunión</option>
+                            <option value="Propuestas en ejecución">Propuestas en ejecución</option>
+                            <option value="Propuestas ejecutada">Propuestas ejecutada</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+                    <button type="button" class="btn" style="background-color: #64748b;" onclick="closeModal('leadModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-accent"><i class="fa-solid fa-save"></i> Guardar y Sincronizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR TARIFARIO BASE -->
+    <div class="modal-overlay" id="pricingModal">
+        <div class="modal-card">
+            <span class="modal-close" onclick="closeModal('pricingModal')">&times;</span>
+            <h3 style="margin-bottom: 1.2rem; color: var(--bg-dark);"><i class="fa-solid fa-tags"></i> Configurar Precios Base</h3>
+            <form onsubmit="handleTariffUpdate(event)">
+                <div class="form-group">
+                    <label>Cobertura de Evento ($)</label>
+                    <input type="number" id="baseCobertura" required>
+                </div>
+                <div class="form-group">
+                    <label>Campañas Reel 4K ($)</label>
+                    <input type="number" id="baseReels" required>
+                </div>
+                <div class="form-group">
+                    <label>Video Corporativo ($)</label>
+                    <input type="number" id="baseCorporativo" required>
+                </div>
+                <div class="form-group">
+                    <label>Spot de Marca ($)</label>
+                    <input type="number" id="baseSpot" required>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+                    <button type="button" class="btn" style="background-color: #64748b;" onclick="closeModal('pricingModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-accent"><i class="fa-solid fa-save"></i> Actualizar Tarifario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL AGREGAR PRODUCCIÓN DIRECTA -->
+    <div class="modal-overlay" id="prodModal">
+        <div class="modal-card">
+            <span class="modal-close" onclick="closeModal('prodModal')">&times;</span>
+            <h3 style="margin-bottom: 1.2rem; color: var(--bg-dark);"><i class="fa-solid fa-film"></i> Agregar Proyecto Audiovisual</h3>
+            <form onsubmit="handleNewProdSubmit(event)">
+                <div class="form-group">
+                    <label>Cliente</label>
+                    <input type="text" id="prodClient" required placeholder="Ej. Calzados Trendy">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Servicio</label>
+                        <select id="prodServiceSelect">
+                            <option value="Cobertura de Evento">Cobertura de Evento</option>
+                            <option value="Campañas Reel 4K">Campañas Reel 4K</option>
+                            <option value="Video Corporativo">Video Corporativo</option>
+                            <option value="Spot de Marca">Spot de Marca</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Estado</label>
+                        <select id="prodStage">
+                            <option value="Propuestas en reunión">Propuestas en reunión</option>
+                            <option value="Propuestas en ejecución">Propuestas en ejecución</option>
+                            <option value="Propuestas ejecutada">Propuestas ejecutada</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+                    <button type="button" class="btn" style="background-color: #64748b;" onclick="closeModal('prodModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-accent"><i class="fa-solid fa-save"></i> Guardar Proyecto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- DATOS POR DEFECTO (INICIALES) ---
+        const defaultTariffs = {
+            'Cobertura de Evento': 350,
+            'Campañas Reel 4K': 450,
+            'Video Corporativo': 800,
+            'Spot de Marca': 600
+        };
+
+        const defaultProposals = [
+            { id: 1, company: 'TechCorp S.A.', contact: 'Roberto Gómez', service: 'Video Corporativo', amount: 800, date: '2026-07-05', stage: 'Propuestas ejecutada' },
+            { id: 2, company: 'Calzados Trendy', contact: 'Ana Morales', service: 'Campañas Reel 4K', amount: 450, date: '2026-07-12', stage: 'Propuestas en ejecución' },
+            { id: 3, company: 'Gourmet Group', contact: 'Carlos Ramos', service: 'Cobertura de Evento', amount: 350, date: '2026-07-18', stage: 'Propuestas en reunión' },
+            { id: 4, company: 'Hotel Boutique', contact: 'Elena Rostova', service: 'Spot de Marca', amount: 600, date: '2026-07-22', stage: 'Propuesta enviada' }
+        ];
+
+        // --- CARGA DESDE LOCALSTORAGE O VALORES POR DEFECTO ---
+        let baseTariffs = JSON.parse(localStorage.getItem('focal_baseTariffs')) || defaultTariffs;
+        let proposalsData = JSON.parse(localStorage.getItem('focal_proposalsData')) || defaultProposals;
+
+        let barChartInstance = null;
+
+        // --- SISTEMA DE PERSISTENCIA EN LOCALSTORAGE ---
+        function saveToLocalStorage(showToastAlert = false) {
+            localStorage.setItem('focal_baseTariffs', JSON.stringify(baseTariffs));
+            localStorage.setItem('focal_proposalsData', JSON.stringify(proposalsData));
+            
+            if (showToastAlert) {
+                showToast("Información guardada correctamente");
+            }
+        }
+
+        function resetToDefaultData() {
+            if (confirm('¿Estás seguro de restablecer los datos por defecto? Se borrarán tus cambios locales.')) {
+                baseTariffs = JSON.parse(JSON.stringify(defaultTariffs));
+                proposalsData = JSON.parse(JSON.stringify(defaultProposals));
+                saveToLocalStorage(false);
+                renderAllModules();
+                showToast("Datos restablecidos de fábrica");
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        // --- INICIALIZACIÓN Y EVENTOS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initClock();
+            initChart();
+            renderAllModules();
+        });
+
+        function initClock() {
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('live-clock').innerText = now.toLocaleTimeString();
+            }, 1000);
+        }
+
+        // --- NAVEGACIÓN TAB ---
+        function switchTab(e, tabId) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            
+            e.currentTarget.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+
+            const titles = {
+                'dashboard': 'Dashboard de Barras Interactivo',
+                'pricing': 'Precios y Cotizaciones por Propuestas',
+                'calendar-tab': 'Calendario de Citas y Entregas',
+                'leads': 'Gestión de Propuestas y Leads',
+                'production': 'Módulo de Producción Audiovisual'
+            };
+            document.getElementById('page-title').innerText = titles[tabId] || 'Focal CRM';
+        }
+
+        // --- LÓGICA DE ACTUALIZACIÓN INTEGRAL ---
+        function renderAllModules() {
+            updateKPIs();
+            updateChart();
+            renderDashboardTable();
+            renderPricingBreakdown();
+            renderCalendar();
+            renderMasterTable();
+            renderKanban();
+            updateTariffCards();
+        }
+
+        function updateKPIs() {
+            const counts = { 'Propuestas ejecutada': 0, 'Propuestas en ejecución': 0, 'Propuestas en reunión': 0, 'Propuesta enviada': 0 };
+            let totalGained = 0;
+
+            proposalsData.forEach(p => {
+                if(counts[p.stage] !== undefined) counts[p.stage]++;
+                if(p.stage === 'Propuestas ejecutada') totalGained += Number(p.amount);
+            });
+
+            document.getElementById('kpi-ejecutadas').innerText = counts['Propuestas ejecutada'];
+            document.getElementById('kpi-enejecucion').innerText = counts['Propuestas en ejecución'];
+            document.getElementById('kpi-reunion').innerText = counts['Propuestas en reunión'];
+            document.getElementById('kpi-enviadas').innerText = counts['Propuesta enviada'];
+            document.getElementById('kpi-total-ganado').innerText = `$${totalGained.toLocaleString()}`;
+        }
+
+        // --- GRÁFICO DE BARRAS CHART.JS ---
+        function initChart() {
+            const ctx = document.getElementById('proposalsBarChart').getContext('2d');
+            barChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Propuesta enviada', 'En reunión', 'En ejecución', 'Ejecutada'],
+                    datasets: [{
+                        label: 'Proyectos por Estado',
+                        data: [0, 0, 0, 0],
+                        backgroundColor: ['#64748b', '#0369a1', '#f7941d', '#166534'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+        }
+
+        function updateChart() {
+            if(!barChartInstance) return;
+            const counts = { 'Propuesta enviada': 0, 'Propuestas en reunión': 0, 'Propuestas en ejecución': 0, 'Propuestas ejecutada': 0 };
+            proposalsData.forEach(p => { if(counts[p.stage] !== undefined) counts[p.stage]++; });
+
+            barChartInstance.data.datasets[0].data = [
+                counts['Propuesta enviada'],
+                counts['Propuestas en reunión'],
+                counts['Propuestas en ejecución'],
+                counts['Propuestas ejecutada']
+            ];
+            barChartInstance.update();
+        }
+
+        // --- AYUDANTE DE INSIGNIAS (BADGES) ---
+        function getBadge(stage) {
+            const map = {
+                'Propuesta enviada': '<span class="badge badge-enviada">Enviada</span>',
+                'Propuestas en reunión': '<span class="badge badge-reunion">En Reunión</span>',
+                'Propuestas en ejecución': '<span class="badge badge-enejecucion">En Ejecución</span>',
+                'Propuestas ejecutada': '<span class="badge badge-ejecutada">Ejecutada</span>'
+            };
+            return map[stage] || stage;
+        }
+
+        // --- RENDERIZADO DE TABLAS ---
+        function renderDashboardTable() {
+            const tbody = document.getElementById('dashboard-proposals-table');
+            tbody.innerHTML = proposalsData.map(p => `
+                <tr>
+                    <td><strong>${p.company}</strong></td>
+                    <td>${p.service}</td>
+                    <td><strong>$${p.amount}</strong></td>
+                    <td>${p.date}</td>
+                    <td>${getBadge(p.stage)}</td>
+                    <td><button class="action-btn-sm" onclick="editProposal(${p.id})"><i class="fa-solid fa-pen"></i></button></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderMasterTable() {
+            const tbody = document.getElementById('proposals-master-body');
+            tbody.innerHTML = proposalsData.map(p => `
+                <tr>
+                    <td><strong>${p.company}</strong></td>
+                    <td>${p.contact}</td>
+                    <td>${p.service}</td>
+                    <td>$${p.amount}</td>
+                    <td>${p.date}</td>
+                    <td>${getBadge(p.stage)}</td>
+                    <td>
+                        <button class="action-btn-sm" onclick="editProposal(${p.id})"><i class="fa-solid fa-pen"></i></button>
+                        <button class="action-btn-sm" style="color:#e11d48;" onclick="deleteProposal(${p.id})"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderPricingBreakdown() {
+            const tbody = document.getElementById('pricing-breakdown-body');
+            tbody.innerHTML = proposalsData.map(p => {
+                const base = baseTariffs[p.service] || 0;
+                const diff = p.amount - base;
+                const diffText = diff !== 0 ? `<span style="font-size:0.75rem; color:${diff > 0 ? '#166534':'#b91c1c'}">(${diff > 0 ? '+':''}${diff})</span>` : '';
+                return `
+                    <tr>
+                        <td><strong>${p.company}</strong></td>
+                        <td>${p.service}</td>
+                        <td>$${base}</td>
+                        <td><strong>$${p.amount}</strong> ${diffText}</td>
+                        <td>${getBadge(p.stage)}</td>
+                        <td><button class="action-btn-sm" onclick="editProposal(${p.id})"><i class="fa-solid fa-pen"></i> Ajustar</button></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // --- RENDERIZADO DE KANBAN ---
+        function renderKanban() {
+            const cols = {
+                'kanban-reunion': proposalsData.filter(p => p.stage === 'Propuestas en reunión'),
+                'kanban-enejecucion': proposalsData.filter(p => p.stage === 'Propuestas en ejecución'),
+                'kanban-ejecutadas': proposalsData.filter(p => p.stage === 'Propuestas ejecutada')
+            };
+
+            document.getElementById('count-reunion').innerText = cols['kanban-reunion'].length;
+            document.getElementById('count-enejecucion').innerText = cols['kanban-enejecucion'].length;
+            document.getElementById('count-ejecutadas').innerText = cols['kanban-ejecutadas'].length;
+
+            for (const [colId, items] of Object.entries(cols)) {
+                const container = document.getElementById(colId);
+                container.innerHTML = items.map(item => `
+                    <div class="kanban-card">
+                        <div class="kanban-title">${item.company}</div>
+                        <div class="kanban-price">$${item.amount}</div>
+                        <span class="kanban-tag">${item.service}</span>
+                        <div style="margin-top:0.5rem; text-align:right;">
+                            <button class="action-btn-sm" onclick="editProposal(${item.id})"><i class="fa-solid fa-pen"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // --- RENDERIZADO DEL CALENDARIO ---
+        function renderCalendar() {
+            const container = document.getElementById('calendar-body');
+            container.innerHTML = '';
+            
+            // Días de relleno para julio de 2026 (1 de julio es Miércoles)
+            for(let i = 0; i < 2; i++) {
+                container.innerHTML += `<div class="calendar-day" style="background:#f1f5f9; border:none;"></div>`;
+            }
+
+            for(let day = 1; day <= 31; day++) {
+                const dayStr = day < 10 ? `0${day}` : `${day}`;
+                const fullDateStr = `2026-07-${dayStr}`;
+                const events = proposalsData.filter(p => p.date === fullDateStr);
+
+                let eventsHtml = events.map(e => `
+                    <div class="calendar-event" title="${e.company} - ${e.service}">${e.company}</div>
+                `).join('');
+
+                container.innerHTML += `
+                    <div class="calendar-day">
+                        <span style="font-weight:bold; color:var(--text-muted);">${day}</span>
+                        ${eventsHtml}
+                    </div>
+                `;
+            }
+        }
+
+        // --- MODALES & ACCIONES ---
+        function openModal(modalType) {
+            if(modalType === 'lead') {
+                document.getElementById('modal-lead-title').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Nueva Propuesta';
+                document.getElementById('proposalForm').reset();
+                document.getElementById('proposalId').value = '';
+                document.getElementById('eventDate').value = '2026-07-22';
+                autoFillPrice();
+                document.getElementById('leadModal').classList.add('active');
+            } else if(modalType === 'pricingModal') {
+                document.getElementById('baseCobertura').value = baseTariffs['Cobertura de Evento'];
+                document.getElementById('baseReels').value = baseTariffs['Campañas Reel 4K'];
+                document.getElementById('baseCorporativo').value = baseTariffs['Video Corporativo'];
+                document.getElementById('baseSpot').value = baseTariffs['Spot de Marca'];
+                document.getElementById('pricingModal').classList.add('active');
+            } else if(modalType === 'prod') {
+                document.getElementById('prodModal').classList.add('active');
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function autoFillPrice() {
+            const service = document.getElementById('serviceSelect').value;
+            if(!document.getElementById('proposalId').value) {
+                document.getElementById('proposalPrice').value = baseTariffs[service] || 300;
+            }
+        }
+
+        function editProposal(id) {
+            const item = proposalsData.find(p => p.id === id);
+            if(!item) return;
+
+            document.getElementById('modal-lead-title').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Editar Propuesta';
+            document.getElementById('proposalId').value = item.id;
+            document.getElementById('companyName').value = item.company;
+            document.getElementById('contactName').value = item.contact;
+            document.getElementById('serviceSelect').value = item.service;
+            document.getElementById('proposalPrice').value = item.amount;
+            document.getElementById('eventDate').value = item.date;
+            document.getElementById('proposalStage').value = item.stage;
+
+            document.getElementById('leadModal').classList.add('active');
+        }
+
+        function deleteProposal(id) {
+            if(confirm('¿Desea eliminar esta propuesta?')) {
+                proposalsData = proposalsData.filter(p => p.id !== id);
+                saveToLocalStorage(false);
+                renderAllModules();
+                showToast("Propuesta eliminada");
+            }
+        }
+
+        // --- MANEJADORES DE FORMULARIOS ---
+        function handleProposalSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('proposalId').value;
+            const payload = {
+                id: id ? Number(id) : Date.now(),
+                company: document.getElementById('companyName').value,
+                contact: document.getElementById('contactName').value,
+                service: document.getElementById('serviceSelect').value,
+                amount: Number(document.getElementById('proposalPrice').value),
+                date: document.getElementById('eventDate').value,
+                stage: document.getElementById('proposalStage').value
+            };
+
+            if(id) {
+                const idx = proposalsData.findIndex(p => p.id === Number(id));
+                if(idx !== -1) proposalsData[idx] = payload;
+            } else {
+                proposalsData.push(payload);
+            }
+
+            closeModal('leadModal');
+            saveToLocalStorage(false);
+            renderAllModules();
+            showToast("Propuesta guardada correctamente");
+        }
+
+        function handleTariffUpdate(e) {
+            e.preventDefault();
+            baseTariffs['Cobertura de Evento'] = Number(document.getElementById('baseCobertura').value);
+            baseTariffs['Campañas Reel 4K'] = Number(document.getElementById('baseReels').value);
+            baseTariffs['Video Corporativo'] = Number(document.getElementById('baseCorporativo').value);
+            baseTariffs['Spot de Marca'] = Number(document.getElementById('baseSpot').value);
+
+            closeModal('pricingModal');
+            saveToLocalStorage(false);
+            renderAllModules();
+            showToast("Tarifario actualizado correctamente");
+        }
+
+        function handleNewProdSubmit(e) {
+            e.preventDefault();
+            const service = document.getElementById('prodServiceSelect').value;
+            proposalsData.push({
+                id: Date.now(),
+                company: document.getElementById('prodClient').value,
+                contact: 'Contacto Directo',
+                service: service,
+                amount: baseTariffs[service] || 400,
+                date: '2026-07-25',
+                stage: document.getElementById('prodStage').value
+            });
+
+            closeModal('prodModal');
+            saveToLocalStorage(false);
+            renderAllModules();
+            showToast("Proyecto agregado correctamente");
+        }
+
+        function updateTariffCards() {
+            document.getElementById('tariff-cobertura').innerText = `$${baseTariffs['Cobertura de Evento']}`;
+            document.getElementById('tariff-reels').innerText = `$${baseTariffs['Campañas Reel 4K']}`;
+            document.getElementById('tariff-corporativo').innerText = `$${baseTariffs['Video Corporativo']}`;
+            document.getElementById('tariff-spot').innerText = `$${baseTariffs['Spot de Marca']}`;
+        }
+    </script>
+</body>
+</html>
